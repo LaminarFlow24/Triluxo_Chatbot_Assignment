@@ -7,11 +7,12 @@ from flask_cors import CORS
 
 # Import LangChain components
 from langchain.docstore.document import Document
+from langchain.docstore.in_memory import InMemoryDocstore
 from langchain.vectorstores import FAISS
 from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 
-# Import Hugging Face Pipeline LLM wrapper from LangChain
+# Import Hugging Face Pipeline LLM wrapper
 from langchain.llms import HuggingFacePipeline
 from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -21,23 +22,31 @@ CORS(app)
 api = Api(app)
 
 # --- Load the Precomputed FAISS Index and Metadata ---
-# Read the FAISS index from disk
+# Read the FAISS index from disk.
 index = faiss.read_index("courses_faiss.index")
 
-# Load the saved metadata (list of dictionaries) and rebuild Document objects.
+# Load the saved metadata (list of dicts) and rebuild Document objects.
 with open("courses_metadata.json", "r", encoding="utf-8") as f:
     metadata_list = json.load(f)
 docs = [Document(page_content="", metadata=m) for m in metadata_list]
 
-# Recreate the embeddings object (must match the one used during generation)
+# Recreate the embeddings object (must match the one used during generation).
 embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
 
-# Reconstruct the FAISS vector store using the loaded index and documents.
-# (The constructor accepts the embedding_function, index, and docs.)
-vectorstore = FAISS(embedding_function=embeddings, index=index, docs=docs)
+# Create an InMemoryDocstore and mapping from index to docstore id.
+docstore = InMemoryDocstore({i: doc for i, doc in enumerate(docs)})
+index_to_docstore_id = {i: i for i in range(len(docs))}
+
+# Reconstruct the FAISS vector store using the loaded index and additional arguments.
+vectorstore = FAISS(
+    embedding_function=embeddings,
+    index=index,
+    docstore=docstore,
+    index_to_docstore_id=index_to_docstore_id
+)
 
 # --- Create the Hugging Face LLM for Chatbot Responses ---
-model_name = "google/flan-t5-base"  # A free, reasonably accurate model
+model_name = "google/flan-t5-base"  # A free, reasonably accurate model.
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 hf_pipeline = pipeline(
@@ -54,7 +63,7 @@ chatbot_chain = ConversationalRetrievalChain.from_llm(llm, vectorstore.as_retrie
 
 # --- Parameters for Course Filtering ---
 MAX_COURSES = 5
-DISTANCE_THRESHOLD = 1.0  # Adjust this threshold based on your embedding space
+DISTANCE_THRESHOLD = 1.0  # Adjust this threshold as needed.
 
 # --- Define Synonyms for "Course" (expanded) ---
 COURSE_SYNONYMS = {
@@ -67,9 +76,9 @@ class Chatbot(Resource):
     def post(self):
         data = request.get_json()
         user_message = data.get("message", "").strip()
-        history = data.get("history", [])  # Expected as a list of [question, answer] pairs
+        history = data.get("history", [])  # Expected as a list of [question, answer] pairs.
 
-        # Convert history (list-of-lists) into a list of tuples for processing
+        # Convert history (list-of-lists) into a list of tuples for internal processing.
         chat_history = [tuple(item) for item in history]
 
         # --- Basic Questions Handling ---
@@ -95,7 +104,7 @@ class Chatbot(Resource):
             if not filtered_results:
                 answer = "Sorry, I couldn't find any courses matching that query."
             else:
-                # Check if specific field requests are present in the prompt
+                # Check if specific field requests are present; if none, show all details.
                 requested_fields = []
                 if "curriculum" in user_message_lower:
                     requested_fields.append("curriculum")
@@ -121,7 +130,7 @@ class Chatbot(Resource):
                     if isinstance(curriculum, list):
                         curriculum = ", ".join(curriculum)
 
-                    # Compute Total Price = price * number of lessons
+                    # Compute Total Price = price * number of lessons.
                     try:
                         p = float(str(price).replace("$", "").strip())
                         n = float(str(lessons).strip())
@@ -166,10 +175,10 @@ class Chatbot(Resource):
         history = [list(pair) for pair in chat_history]
         return jsonify({"response": answer, "history": history})
 
-# Register the Chatbot resource at /chat
+# Register the Chatbot Resource at /chat.
 api.add_resource(Chatbot, '/chat')
 
-# Serve the static HTML page at the root URL
+# Serve the static HTML page at the root URL.
 @app.route('/')
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
