@@ -1,13 +1,14 @@
 import os
+import json
+import faiss
 from flask import Flask, request, jsonify, send_from_directory
 from flask_restful import Resource, Api
 from flask_cors import CORS
-import json
 
 # Import LangChain components
-from langchain.embeddings import SentenceTransformerEmbeddings
-from langchain.vectorstores import FAISS
 from langchain.docstore.document import Document
+from langchain.vectorstores import FAISS
+from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 
 # Import Hugging Face Pipeline LLM wrapper from LangChain
@@ -19,26 +20,21 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 api = Api(app)
 
-# --- Load courses.json ---
-with open("courses.json", "r", encoding="utf-8") as f:
-    courses = json.load(f)
+# --- Load the Precomputed FAISS Index and Metadata ---
+# Read the FAISS index from disk
+index = faiss.read_index("courses_faiss.index")
 
-# --- Create Documents from Course Data ---
-documents = []
-for course in courses:
-    # Build content for embeddings (this content is not directly displayed)
-    content = (
-        f"Course Name: {course.get('Course Name', '')}\n"
-        f"Description: {course.get('Course Description', '')}\n"
-        f"Curriculum: {', '.join(course.get('Course Curriculum', []))}\n"
-        f"Price: {course.get('Course Price', 'N/A')}"
-    )
-    doc = Document(page_content=content, metadata=course)
-    documents.append(doc)
+# Load the saved metadata (list of dictionaries) and rebuild Document objects.
+with open("courses_metadata.json", "r", encoding="utf-8") as f:
+    metadata_list = json.load(f)
+docs = [Document(page_content="", metadata=m) for m in metadata_list]
 
-# --- Create Embeddings and Build the FAISS Vector Store ---
+# Recreate the embeddings object (must match the one used during generation)
 embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
-vectorstore = FAISS.from_documents(documents, embeddings)
+
+# Reconstruct the FAISS vector store using the loaded index and documents.
+# (The constructor accepts the embedding_function, index, and docs.)
+vectorstore = FAISS(embedding_function=embeddings, index=index, docs=docs)
 
 # --- Create the Hugging Face LLM for Chatbot Responses ---
 model_name = "google/flan-t5-base"  # A free, reasonably accurate model
@@ -58,9 +54,9 @@ chatbot_chain = ConversationalRetrievalChain.from_llm(llm, vectorstore.as_retrie
 
 # --- Parameters for Course Filtering ---
 MAX_COURSES = 5
-DISTANCE_THRESHOLD = 1.0  # Adjust based on your embedding space
+DISTANCE_THRESHOLD = 1.0  # Adjust this threshold based on your embedding space
 
-# --- Define Synonyms for "Course" ---
+# --- Define Synonyms for "Course" (expanded) ---
 COURSE_SYNONYMS = {
     "course", "courses", "programme", "program", "session", "class", "classes",
     "training", "education", "learn", "learn more", "know more", "find out", "explore", "information"
@@ -73,7 +69,7 @@ class Chatbot(Resource):
         user_message = data.get("message", "").strip()
         history = data.get("history", [])  # Expected as a list of [question, answer] pairs
 
-        # Convert history (list-of-lists) into a list of tuples for internal processing.
+        # Convert history (list-of-lists) into a list of tuples for processing
         chat_history = [tuple(item) for item in history]
 
         # --- Basic Questions Handling ---
@@ -99,7 +95,7 @@ class Chatbot(Resource):
             if not filtered_results:
                 answer = "Sorry, I couldn't find any courses matching that query."
             else:
-                # Check for specific field requests; if none, show all details.
+                # Check if specific field requests are present in the prompt
                 requested_fields = []
                 if "curriculum" in user_message_lower:
                     requested_fields.append("curriculum")
@@ -127,7 +123,6 @@ class Chatbot(Resource):
 
                     # Compute Total Price = price * number of lessons
                     try:
-                        # Remove any "$" from price, then convert to float
                         p = float(str(price).replace("$", "").strip())
                         n = float(str(lessons).strip())
                         total_price = p * n
@@ -171,10 +166,10 @@ class Chatbot(Resource):
         history = [list(pair) for pair in chat_history]
         return jsonify({"response": answer, "history": history})
 
-# --- Register the Chatbot Resource at /chat ---
+# Register the Chatbot resource at /chat
 api.add_resource(Chatbot, '/chat')
 
-# --- Serve the Static HTML Page at the Root URL ---
+# Serve the static HTML page at the root URL
 @app.route('/')
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
