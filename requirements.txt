@@ -1,8 +1,11 @@
 Flask
-flask-cors
 flask-restful
-langchain
-transformers
+flask-cors
 faiss-cpu
+langchain
 sentence-transformers
-gunicorn
+transformers
+torch
+selenium
+beautifulsoup4
+requests
