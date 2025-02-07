@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Course Chatbot</title>
+  <style>
+    body { 
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 800px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #chatbox {
+      padding: 20px;
+      height: 400px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 20px;
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.4;
+    }
+    .user {
+      background-color: #0084ff;
+      color: #fff;
+      align-self: flex-end;
+      text-align: right;
+    }
+    .bot {
+      background-color: #e5e5ea;
+      color: #000;
+      align-self: flex-start;
+      text-align: left;
+    }
+    /* Styles for course cards (used in bot responses) */
+    .course-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      background-color: #fff;
+    }
+    .course-card h2 {
+      margin-top: 0;
+      font-size: 20px;
+      color: #333;
+    }
+    .course-card p {
+      margin: 5px 0;
+      font-size: 14px;
+      color: #555;
+    }
+    /* Fade-in effect for HTML responses */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+    #inputForm {
+      display: flex;
+      border-top: 1px solid #ccc;
+    }
+    #inputField {
+      flex-grow: 1;
+      padding: 15px;
+      font-size: 16px;
+      border: none;
+      outline: none;
+    }
+    #sendButton {
+      padding: 15px 20px;
+      font-size: 16px;
+      background-color: #0084ff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    a {
+      color: #0084ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div id="chatbox"></div>
+    <form id="inputForm">
+      <input type="text" id="inputField" placeholder="Type your message..." required />
+      <button type="submit" id="sendButton">Send</button>
+    </form>
+  </div>
+
+  <script>
+    let chatHistory = [];
+
+    const chatbox = document.getElementById('chatbox');
+    const inputForm = document.getElementById('inputForm');
+    const inputField = document.getElementById('inputField');
+
+    // Immediately add a message to the chatbox (rendering HTML correctly)
+    function addMessage(sender, message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message', sender);
+      // Use innerHTML so that any HTML in the message is rendered
+      messageDiv.innerHTML = message;
+      chatbox.appendChild(messageDiv);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    // Typing effect for plain-text messages.
+    // If the message contains HTML tags, we render it immediately with a fade-in effect.
+    async function typeMessage(sender, message) {
+      if (message.indexOf("<") !== -1) {
+        // Message likely contains HTML; render immediately with fade-in.
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', sender, 'fade-in');
+        messageDiv.innerHTML = message;
+        chatbox.appendChild(messageDiv);
+        chatbox.scrollTop = chatbox.scrollHeight;
+        return;
+      }
+      // Otherwise, simulate typing effect word by word.
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message', sender);
+      chatbox.appendChild(messageDiv);
+      chatbox.scrollTop = chatbox.scrollHeight;
+      
+      const words = message.split(" ");
+      for (let i = 0; i < words.length; i++) {
+        messageDiv.innerHTML += words[i] + " ";
+        chatbox.scrollTop = chatbox.scrollHeight;
+        await new Promise(resolve => setTimeout(resolve, 200)); // Adjust delay as needed
+      }
+    }
+
+    async function sendMessage(message) {
+      addMessage('user', message);
+      inputField.value = '';
+      
+      try {
+        const response = await fetch("http://127.0.0.1:5000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: message, history: chatHistory })
+        });
+        const data = await response.json();
+        chatHistory = data.history; // Update conversation history
+        await typeMessage('bot', data.response);
+      } catch (error) {
+        console.error("Error:", error);
+        addMessage('bot', "Error fetching response.");
+      }
+    }
+
+    inputForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const message = inputField.value.trim();
+      if (message) {
+        sendMessage(message);
+      }
+    });
+  </script>
+</body>
+</html>
