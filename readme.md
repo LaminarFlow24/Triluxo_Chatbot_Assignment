@@ -38,16 +38,16 @@ Your application should now be running. You can interact with the chatbot throug
 
 ## Project Structure
 
-- **generate_embeddings.py**  
+1) **generate_embeddings.py**  
 - Script to scrape course data, compute sentence embeddings, and store the FAISS index and metadata.
 
-- **chatbot_app.py**  
+2) **chatbot_app.py**  
 - Flask application that loads the precomputed FAISS index and metadata, reconstructs the vector store, and serves the chatbot API.
 
-- **static/index.html**  
+3) **static/index.html**  
 - Frontend for the chatbot that provides an interactive UI with typing effects and organized display of course cards.
 
-- **requirements.txt**  
+4) **requirements.txt**  
 - List of Python dependencies required to run the project.
 
 ## Deployment
