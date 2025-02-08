@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore")  # Suppress all warnings
+
 import os
 import json
 import faiss
@@ -104,7 +107,6 @@ class Chatbot(Resource):
             if not filtered_results:
                 answer = "Sorry, I couldn't find any courses matching that query."
             else:
-                # Check if specific field requests are present; if none, show all details.
                 requested_fields = []
                 if "curriculum" in user_message_lower:
                     requested_fields.append("curriculum")
@@ -139,7 +141,6 @@ class Chatbot(Resource):
                     except Exception:
                         total_price_str = "N/A"
 
-                    # Build an organized HTML card for the course.
                     course_info = f"""
                     <div class="course-card">
                       <h2><strong>{course_name.upper()}</strong></h2>
@@ -184,4 +185,5 @@ def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print("Your app is running on http://0.0.0.0:5000")
+    app.run(host="0.0.0.0", port=5000, debug=False)
