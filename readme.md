@@ -20,6 +20,10 @@ Once the server starts, click on the provided local port URL (e.g., [http://127.
 4. **Interact with the Chatbot**  
 Your application should now be running. You can interact with the chatbot through the web interface.
 
+## Features of Chatbot : 
+
+1. The model is capable of answering user any query regrading any course which is available on website.
+
 ## Approach
 
 1. **Data Scraping:**  
