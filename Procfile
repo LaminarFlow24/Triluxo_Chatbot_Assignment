@@ -1,1 +1,1 @@
-web: gunicorn chatbot_app:app
+web: gunicorn app:app

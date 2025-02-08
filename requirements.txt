@@ -10,3 +10,4 @@ selenium
 beautifulsoup4
 requests
 langchain-community
+gunicorn
