@@ -13,7 +13,7 @@ A conversational chatbot that retrieves and displays course information by lever
 *Note: This process may take some time.*
 
 3. **Run the Application**  
-Execute the main Flask app by running: python chatbot_app.py
+Execute the main Flask app by running: **python chatbot_app.py**
 
 Once the server starts, click on the provided local port URL (e.g., [http://127.0.0.1:5000](http://127.0.0.1:5000)) in your browser.
 
