@@ -160,7 +160,7 @@ class Chatbot(Resource):
                         <a href="https://brainlox.com/book-free-demo" target="_blank">Book a Free Demo</a> | 
                         <a href="https://brainlox.com/contact" target="_blank">Enquire Now</a>
                       </p>
-                      <p><em>Score:</em> {score:.2f}</p>
+                   
                     </div>
                     """
                     answer_lines.append(course_info)

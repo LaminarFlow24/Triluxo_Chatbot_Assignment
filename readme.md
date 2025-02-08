@@ -2,6 +2,10 @@
 
 A conversational chatbot that retrieves and displays course information by leveraging web scraping, sentence embeddings, and FAISS-based vector search. The chatbot is built using Flask, LangChain, and a free Hugging Face model.
 
+## Demo Link 
+
+- https://youtu.be/lEGphyy_gTA
+
 ## Steps to Run
 
 1. **Download or Clone the Repository**  
@@ -13,17 +17,22 @@ A conversational chatbot that retrieves and displays course information by lever
 *Note: This process may take some time.*
 
 3. **Run the Application**  
-Execute the main Flask app by running:
+Execute the main Flask app by running: **python chatbot_app.py**
 
 Once the server starts, click on the provided local port URL (e.g., [http://127.0.0.1:5000](http://127.0.0.1:5000)) in your browser.
 
 4. **Interact with the Chatbot**  
 Your application should now be running. You can interact with the chatbot through the web interface.
 
+## Features of Chatbot : 
+
+1. The model is **capable of answering user any query regrading any course** which is available on website.
+2. The model provides **description, price per lesson, total price, number of lessons, curriculum and total price** for each course.
+
 ## Approach
 
 1. **Data Scraping:**  
-- The project scrapes not only the main webpage but also the individual course pages to extract detailed information such as "Curriculum" and "Description".
+- The project scrapes not only the main webpage but also the individual course pages to extract detailed information such as "Curriculum" and "Description". All the data is stored in a JSON file, which is then passed through sentence embedding models.
 
 2. **Sentence Embeddings:**  
 - The "all-MiniLM-L6-v2" model is used to generate sentence embeddings for the course information.
@@ -38,16 +47,16 @@ Your application should now be running. You can interact with the chatbot throug
 
 ## Project Structure
 
-- **generate_embeddings.py**  
+1) **generate_embeddings.py**  
 - Script to scrape course data, compute sentence embeddings, and store the FAISS index and metadata.
 
-- **chatbot_app.py**  
+2) **chatbot_app.py**  
 - Flask application that loads the precomputed FAISS index and metadata, reconstructs the vector store, and serves the chatbot API.
 
-- **static/index.html**  
+3) **static/index.html**  
 - Frontend for the chatbot that provides an interactive UI with typing effects and organized display of course cards.
 
-- **requirements.txt**  
+4) **requirements.txt**  
 - List of Python dependencies required to run the project.
 
 ## Deployment
